@@ -123,4 +123,36 @@ describe("Anthropic", function()
       assert.equals("To calculate 27 * 453, I'll multiply these", anthropic._thinking_output)
     end)
   end)
+
+  describe("configure_thinking", function()
+    it("should remember previous settings when toggling", function()
+      -- Mock providers and state
+      local providers = {
+        anthropic = {
+          params = {
+            chat = {}
+          }
+        }
+      }
+      local state = {
+        set_thinking = function() end
+      }
+
+      -- Enable thinking with custom budget
+      anthropic:configure_thinking({args = "2048"}, true, providers, state)
+      assert.equals(2048, providers.anthropic.params.chat.thinking.budget_tokens)
+
+      -- Disable thinking
+      anthropic:configure_thinking({}, true, providers, state)
+      assert.is_nil(providers.anthropic.params.chat.thinking)
+      assert.not_nil(providers.anthropic.params.chat._stored_thinking)
+      assert.equals(2048, providers.anthropic.params.chat._stored_thinking.budget_tokens)
+
+      -- Re-enable thinking - should use previous budget
+      anthropic:configure_thinking({}, true, providers, state)
+      assert.not_nil(providers.anthropic.params.chat.thinking)
+      assert.equals(2048, providers.anthropic.params.chat.thinking.budget_tokens)
+      assert.is_nil(providers.anthropic.params.chat._stored_thinking)
+    end)
+  end)
 end)
